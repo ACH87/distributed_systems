@@ -21,7 +21,8 @@ defmodule Paxos do
 
   def propose(pid, value) do
 #    IO.puts('proposed value')
-    send(pid, {:proposed, value[1]})
+    IO.puts(elem(value, 1))
+    send(pid, {:proposed, elem(value, 1)})
   end
 
   def start_ballot(bcast) do
