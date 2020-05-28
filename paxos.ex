@@ -21,7 +21,6 @@ defmodule Paxos do
 
   def propose(pid, value) do
 #    IO.puts('proposed value')
-    IO.puts(elem(value, 1))
 #    IO.puts(pid)
     send(pid, {:proposed, elem(value, 1)})
   end
@@ -88,16 +87,15 @@ defmodule Paxos do
 
             case :global.whereis_name(p) do
               :undefined -> :undefined
-              pid -> end(pid,  {:accept,self(), state.b,state.v})
+              pid -> send(pid,  {:accept,self(), state.b,state.v})
             end
           end
         end
         state
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
-	IO.puts('accepted')
-	IO.puts(state.v)
          if state.accepted_counter >= trunc(length(state.neighbours)/2) +1 do
+           IO.puts("#{state.name}, accepted, #{{state.v}}")
            state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
