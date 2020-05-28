@@ -85,7 +85,7 @@ defmodule Paxos do
         else
           state =  %{state | counter: state.counter+1}
         end
-        if state.counter >= trunc(length(state.neighbours)/2) +1 do
+        if state.counter == trunc(length(state.neighbours)/2) +1 do
 #	  IO.puts('#{state.name} #{'recieved quorum'}')
           for p <- state.neighbours do
             case :global.whereis_name(p) do
@@ -98,7 +98,7 @@ defmodule Paxos do
         state
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
-         if state.accepted_counter >= trunc(length(state.neighbours)/2) +1 && b == state.b do
+         if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
 	# IO.puts('#{state.name} #{'recived a quorum'}')
           state = %{ state | leader: self() }
             for p <- state.neighbours do
@@ -139,7 +139,8 @@ defmodule Paxos do
 
       {:decided, sender, v} ->
 #	if state.leader == :none do
-        state = %{ state | v_old: v, leader: sender, accepted_counter: 0}
+	IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
+        state = %{ state | leader: sender, accepted_counter: 0}
         send(state.upper, {:decide, v})
 #	end
         state
