@@ -68,7 +68,7 @@ defmodule Paxos do
         new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1)
          * length(state.neighbours)
          # enter prepare phase
-#	IO.puts('#{'new ballot'} #{state.name} #{new_ballot}')
+	#IO.puts('#{'new ballot'} #{state.name} #{new_ballot}')
         for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
@@ -86,8 +86,9 @@ defmodule Paxos do
           state = state = %{state | counter: state.counter+1}
         end
         if state.counter >= trunc(length(state.neighbours)/2) +1 do
+#	  IO.puts('#{state.name} #{'recieved quorum'}')
           for p <- state.neighbours do
-
+	
             case :global.whereis_name(p) do
               :undefined -> :undefined
               pid -> send(pid,  {:accept,self(), state.b,state.v})
@@ -98,7 +99,8 @@ defmodule Paxos do
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
          if state.accepted_counter >= trunc(length(state.neighbours)/2) +1 && state.leader == :none do
-           state = %{ state | leader: self() }
+	IO.puts('#{state.name} #{'recived a quorum'}') 
+          state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
                 :undefined -> :undefined
