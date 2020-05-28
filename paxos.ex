@@ -75,7 +75,7 @@ defmodule Paxos do
             pid ->send(pid,  {:prepare,self(),new_ballot})
           end
         end
-        state = %{ state | b: new_ballot }
+        state = %{ state | b: new_ballot, b_old: new_ballot }
         state
 
       {:prepared, b, c} ->
@@ -120,7 +120,7 @@ defmodule Paxos do
         state
 
       {:prepare, sender, b} ->
-#	IO.puts('#{'leader attempting'} #{b}')        
+#	IO.puts('#{'leader attempting'} #{b}')
         if state.current_vote < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
