@@ -59,6 +59,7 @@ defmodule Paxos do
     # communication layer inputs via message i
     state = receive do
       {:proposed, value} ->
+#        IO.puts('#{state.name} #{'proposing value'} #{value}')
         state = %{ state | v: value }
 	#IO.puts(state.received)
         state
@@ -110,14 +111,15 @@ defmodule Paxos do
 
       {:accept,sender,b,v} ->
 #        if state.leader != :none do
-        if state.b_old < b do
+        if state.b_old < b  do
           state = %{ state | b_old: b, v_old: v }
           send(sender, {:accepted, b})
        end
         state
 
       {:prepare, sender, b} ->
-        if state.leader  == :none && state.current_vote < b do
+#	IO.puts('#{'leader attempting'} #{b}')        
+        if state.current_vote < b && state.leader ==:none do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
             state = %{state | current_vote: b}
@@ -130,9 +132,10 @@ defmodule Paxos do
         state
 
       {:decided, sender, v} ->
-
-        state = %{ state | v_old: v, leader: sender}
-        send(state.upper, {:decide, v})
+#	if state.leader != :none do
+        	state = %{ state | v_old: v, leader: sender}
+         	send(state.upper, {:decide, v})
+#	end
         state
 
       _ -> state
