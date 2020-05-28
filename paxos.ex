@@ -83,7 +83,7 @@ defmodule Paxos do
           # state = %{ state | v: c.v_old, b_old: c.b_old, counter: state.counter+1 }
           state = %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
         else
-          state = state = %{state | counter: state.counter+1}
+          state =  %{state | counter: state.counter+1}
         end
         if state.counter >= trunc(length(state.neighbours)/2) +1 do
 #	  IO.puts('#{state.name} #{'recieved quorum'}')
@@ -92,6 +92,7 @@ defmodule Paxos do
               :undefined -> :undefined
               pid -> send(pid,  {:accept,self(), state.b,state.v})
             end
+          state = %{state | counter: 0}
           end
         end
         state
@@ -138,7 +139,7 @@ defmodule Paxos do
 
       {:decided, sender, v} ->
 #	if state.leader == :none do
-        state = %{ state | v_old: v, leader: sender}
+        state = %{ state | v_old: v, leader: sender, accepted_counter: 0}
         send(state.upper, {:decide, v})
 #	end
         state
