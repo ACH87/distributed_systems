@@ -44,7 +44,7 @@ defmodule Paxos do
         b: 1,
         b_old: 0,
         v_old: :none,
-        current_vote: 0
+        current_vote: 0,
         leader: :none
      }
      run(state)
@@ -130,7 +130,7 @@ defmodule Paxos do
             state = %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
-       # end
+        end
         state
 
       {:decided, sender, v} ->

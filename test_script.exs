@@ -29,9 +29,9 @@ get_local_config = fn n -> for i <- 1..n, into: %{},
 test_suite = [
 #   test case, configuration, number of times to run the case, description
 #    {&PaxosTest.run_simple/3, get_local_config.(3), 1, "No failures, no concurrent ballots"},
-    {&PaxosTest.run_simple_2/3, get_dist_config.(3), 20, "No failures, 2 concurrent ballots"}#,
- #   {&PaxosTest.run_simple_many/3, get_dist_config.(5), 10, "No failures, many concurrent ballots"},
-#    {&PaxosTest.run_non_leader_crash/3, get_local_config.(3), 1, "One non-leader crashes, no concurrent ballots"},
+#    {&PaxosTest.run_simple_2/3, get_dist_config.(3), 20, "No failures, 2 concurrent ballots"},
+    {&PaxosTest.run_simple_many/3, get_dist_config.(5), 10, "No failures, many concurrent ballots"},
+    {&PaxosTest.run_non_leader_crash/3, get_local_config.(3), 1, "One non-leader crashes, no concurrent ballots"},
 #    {&PaxosTest.run_minority_non_leader_crash/3, get_dist_config.(5), 1, "Minority non-leader crashes, no concurrent ballots"},
 #    {&PaxosTest.run_leader_crash_simple/3, get_dist_config.(5), 1, "Leader crashes, no concurrent ballots"},
 #    {&PaxosTest.run_leader_crash_simple_2/3, get_dist_config.(7), 5, "Leader and some non-leaders crash, no concurrent ballots"},
