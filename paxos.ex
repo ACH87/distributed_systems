@@ -44,6 +44,7 @@ defmodule Paxos do
         b: 1,
         b_old: 0,
         v_old: :none,
+        current_vote: 0,
         leader: :none
      }
      run(state)
@@ -76,9 +77,9 @@ defmodule Paxos do
         state
 
       {:prepared, b, c} ->
-        if c != :none && c.b_old > state.b_old do
+        if c != :none && c.b_old > state.b do
           # state = %{ state | v: c.v_old, b_old: c.b_old, counter: state.counter+1 }
-          state = %{ state | counter: state.counter+1 }
+          state = %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
         else
           state = state = %{state | counter: state.counter+1}
         end
@@ -87,7 +88,7 @@ defmodule Paxos do
 
             case :global.whereis_name(p) do
               :undefined -> :undefined
-              pid -> send(pid,  {:accept,self(), state.b,state.v})
+              pid -> send(pid,  {:accept,self(), state.b_old,state.v_old})
             end
           end
         end
@@ -95,7 +96,7 @@ defmodule Paxos do
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
          if state.accepted_counter >= trunc(length(state.neighbours)/2) +1 do
-           IO.puts("#{state.name} #{state.v}")
+           IO.puts("#{state.name} #{{state.v}}")
            state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
@@ -117,15 +118,14 @@ defmodule Paxos do
         state
 
       {:prepare, sender, b} ->
-        if state.leader  == :none do
+        if state.leader  == :none && state.current_vote < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
-            state = %{state | b_old: b}
+            state = %{state | current_vote: b}
           else
-            if state.b_old < b do
-              send(sender, {:prepared, b, %{b_old: state.b_old, v_old: state.b}})
-              state = %{state | b_old: b}
-            end
+            send(sender, {:prepared, b, %{b_old: state.b_old, v_old: state.v_old}})
+            state = %{state | current_vote: b}
+            #state = %{state | current_vote: b}]
           end
        end
         state
