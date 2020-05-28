@@ -70,10 +70,7 @@ defmodule Paxos do
         for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
-            pid ->
-              if pid != self() do
-                send(pid,  {:prepare,self(),new_ballot})
-              end
+            pid ->send(pid,  {:prepare,self(),new_ballot})
           end
         end
         state = %{ state | b: new_ballot }
@@ -86,26 +83,21 @@ defmodule Paxos do
         else
           state = state = %{state | counter: state.counter+1}
         end
-	#TODO do we add 1 or nah?
-        if state.counter >= trunc(length(state.neighbours)/2) do
+        if state.counter >= trunc(length(state.neighbours)/2) +1 do
           for p <- state.neighbours do
 
             case :global.whereis_name(p) do
               :undefined -> :undefined
-              pid ->
-                if pid != self() do
-                    send(pid,  {:accept,self(), state.b,state.v})
-                end
+              pid -> end(pid,  {:accept,self(), state.b,state.v})
             end
           end
         end
         state
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
-	#TODO again where needed or nah?
 	IO.puts('accepted')
 	IO.puts(state.v)
-         if state.accepted_counter >= trunc(length(state.neighbours)/2) do
+         if state.accepted_counter >= trunc(length(state.neighbours)/2) +1 do
            state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
@@ -139,7 +131,7 @@ defmodule Paxos do
         state
 
       {:decided, sender, v} ->
-	IO.puts(v)
+      	IO.puts(v)
         state = %{ state | v_old: v, leader: sender}
         send(state.upper, {:decide, v})
         state
