@@ -22,6 +22,7 @@ defmodule Paxos do
   def propose(pid, value) do
 #    IO.puts('proposed value')
     IO.puts(elem(value, 1))
+#    IO.puts(pid)
     send(pid, {:proposed, elem(value, 1)})
   end
 
@@ -102,6 +103,8 @@ defmodule Paxos do
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
 	#TODO again where needed or nah?
+	IO.puts('accepted')
+	IO.puts(state.v)
          if state.accepted_counter >= trunc(length(state.neighbours)/2) do
            state = %{ state | leader: self() }
             for p <- state.neighbours do
@@ -136,6 +139,7 @@ defmodule Paxos do
         state
 
       {:decided, sender, v} ->
+	IO.puts(v)
         state = %{ state | v_old: v, leader: sender}
         send(state.upper, {:decide, v})
         state
