@@ -57,7 +57,7 @@ defmodule Paxos do
     # communication layer inputs via message i
     state = receive do
       {:proposed, value} ->
-        state = %{ state | received: MapSet.put(state.received, {:value, value}) }
+        state = %{ state | received: MapSet.put(state.v, value) }
 	#IO.puts(state.received)
         state
 
