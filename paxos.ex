@@ -68,7 +68,7 @@ defmodule Paxos do
         new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1)
          * length(state.neighbours)
          # enter prepare phase
-	IO.puts('#{'new ballot'} #{state.name} #{new_ballot}')
+#	IO.puts('#{'new ballot'} #{state.name} #{new_ballot}')
         for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
@@ -112,7 +112,7 @@ defmodule Paxos do
 
       {:accept,sender,b,v} ->
 #        if state.leader != :none do
-        IO.puts('#{'old ballot'} #{state.b_old} #{b}')
+        # IO.puts('#{'old ballot'} #{state.b_old} #{b}')
         if state.b_old < b  do
           state = %{ state | b_old: b, v_old: v }
           send(sender, {:accepted, b})
