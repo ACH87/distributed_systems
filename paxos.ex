@@ -88,7 +88,7 @@ defmodule Paxos do
 
             case :global.whereis_name(p) do
               :undefined -> :undefined
-              pid -> send(pid,  {:accept,self(), state.b_old,state.v_old})
+              pid -> send(pid,  {:accept,self(), state.b,state.v})
             end
           end
         end
