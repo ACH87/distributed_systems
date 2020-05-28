@@ -64,7 +64,6 @@ defmodule Paxos do
       {:lead_prepare} ->
         new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1)
          * length(state.neighbours)
-         IO.puts("#{"new ballot"} #{new_ballot}" )
          # enter prepare phase
         for p <- state.neighbours do
           case :global.whereis_name(p) do
@@ -79,17 +78,12 @@ defmodule Paxos do
         state
 
       {:prepared, b, c} ->
-        IO.puts('preapred')
         if c != :none && c.b_old > state.b_old do
           # state = %{ state | v: c.v_old, b_old: c.b_old, counter: state.counter+1 }
           state = %{ state | counter: state.counter+1 }
-          IO.puts(state.counter)
-          IO.puts(trunc(length(state.neighbours)/2))
         else
           state = state = %{state | counter: state.counter+1}
         end
-	IO.puts(state.counter)
-	IO.puts(length(state.neighbours))
 	#TODO do we add 1 or nah?
         if state.counter >= trunc(length(state.neighbours)/2) do
           for p <- state.neighbours do
@@ -106,7 +100,6 @@ defmodule Paxos do
         state
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
-          IO.puts('accepted')
 	#TODO again where needed or nah?
          if state.accepted_counter >= trunc(length(state.neighbours)/2) do
             for p <- state.neighbours do
@@ -122,7 +115,6 @@ defmodule Paxos do
           state
 
       {:accept,sender,b,v} ->
-        IO.puts('accept')
 #        if state.leader != :none do
         if state.b_old < b do
           state = %{ state | b_old: b, v_old: v }
@@ -143,7 +135,6 @@ defmodule Paxos do
         state
 
       {:decided, sender, v} ->
-        IO.puts('decided')
         state = %{ state | v_old: v, leader: sender}
         send(state.upper, {:decide, v})
         state
