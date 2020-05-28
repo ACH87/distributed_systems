@@ -44,8 +44,7 @@ defmodule Paxos do
         b: 1,
         b_old: 0,
         v_old: :none,
-        current_vote: 0,
-        current_value: 0,
+        current_vote: 0
         leader: :none
      }
      run(state)
@@ -122,13 +121,13 @@ defmodule Paxos do
 
       {:prepare, sender, b} ->
 #	IO.puts('#{'leader attempting'} #{b}')
-        # if state.current_vote < b do
+        if state.b_old < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
             state = %{state | current_vote: b}
           else
             send(sender, {:prepared, b, %{b_old: state.b_old, v_old: state.v_old}})
-            state = %{state | current_vote: b, curr}
+            state = %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
        # end
