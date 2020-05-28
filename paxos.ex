@@ -95,7 +95,7 @@ defmodule Paxos do
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter+1 }
          if state.accepted_counter >= trunc(length(state.neighbours)/2) +1 do
-           IO.puts("#{state.name}, accepted, #{{state.v}}")
+           IO.puts("#{state.name} #{state.v}")
            state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
@@ -120,9 +120,11 @@ defmodule Paxos do
         if state.leader  == :none do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
+            state = %{state | b_old: b}
           else
             if state.b_old < b do
               send(sender, {:prepared, b, %{b_old: state.b_old, v_old: state.b}})
+              state = %{state | b_old: b}
             end
           end
        end
