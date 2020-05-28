@@ -1,0 +1,17 @@
+Files:
+- test_harness.ex: testing framework
+- paxos_test.ex: collection of unit tests for the Paxos protocol
+- uuid.ex: library for generating unique identifiers; used by 
+the test script to generate unique node names
+- test_script.exs: the test driver script
+- README: this file
+
+Customise test_script.exs as instructed in the comments.
+
+Make sure there are no any leftover Erlang VMs from previous runs:
+
+killall -9 beam.smp
+
+Launch the test script by entering
+
+iex test_script.exs

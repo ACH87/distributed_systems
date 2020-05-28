@@ -1,0 +1,18 @@
+each time someone tries to reserve a seat, start a ballot, if no other 
+ballots are going on for said seat then seat shoyld be reserved
+
+coukd do something where the upper application stores each seat,
+when a user tries to reserve said seat it starts an election, each user 
+represents their own paxos node, start an ellection with you as leader,
+if you win the ballot, seat is reserved, else, no one gets it
+
+over idea is create a protocol for each seat
+
+multiple instances of seat.ex for fault tolerance
+  the state is a mapping between seat and reservtion
+  if we have a paxos for each seat, we can use propose to set the value for each seat
+  one person starts a vote, then the paxos in that seat becomes a leader
+  
+
+muitple instances of seat x, and a paxos layer for each, user tries to reserver
+propose a value for each corresponding paxos, then procede the ballot
