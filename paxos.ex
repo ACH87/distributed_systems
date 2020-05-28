@@ -21,7 +21,7 @@ defmodule Paxos do
 
   def propose(pid, value) do
 #    IO.puts('proposed value')
-    send(pid, {:proposed, value})
+    send(pid, {:proposed, value[1]})
   end
 
   def start_ballot(bcast) do
@@ -102,10 +102,10 @@ defmodule Paxos do
           state = %{ state | accepted_counter: state.accepted_counter+1 }
 	#TODO again where needed or nah?
          if state.accepted_counter >= trunc(length(state.neighbours)/2) do
+           state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
                 :undefined -> :undefined
-                state = %{ state | leader: self() }
                 pid -> send(pid, {:decided,self(), state.v})
               end
             end
@@ -158,12 +158,8 @@ defmodule Paxos do
 
   defp rank(name, [h|t], acc) do
     if h == name do
-      IO.puts('acc')
-      IO.puts(acc)
       acc
     else
-      IO.puts('h')
-      IO.puts(h)
       rank(name, t, acc+1)
     end
   end
