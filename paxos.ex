@@ -125,11 +125,11 @@ defmodule Paxos do
         if state.b_old < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
-            state = %{ state | b_old: b, v_old: v }
+            # state = %{ state | b_old: b}
             state = %{state | current_vote: b}
           else
             send(sender, {:prepared, b, %{b_old: state.b_old, v_old: state.v_old}})
-              state = %{ state | b_old: b, v_old: v }
+              # state = %{ state | b_old: b }
             state = %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
