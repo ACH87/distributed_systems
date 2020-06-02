@@ -97,7 +97,7 @@ defmodule Paxos do
         end
         state
       {:accepted, b} ->
-          state = %{ state | accepted_counter: state.accepted_counter }
+          state = %{ state | accepted_counter: state.accepted_counter + 1}
          if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
 	# IO.puts('#{state.name} #{'recived a quorum'}')
           state = %{ state | leader: self() }
