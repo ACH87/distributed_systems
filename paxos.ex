@@ -65,7 +65,7 @@ defmodule Paxos do
         state
 
       {:lead_prepare} ->
-        new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1) * length(state.neighbours)
+        new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1) * length(state.neighbours)	
          # enter prepare phase
 	#IO.puts('#{'new ballot'} #{state.name} #{new_ballot}')
         for p <- state.neighbours do
@@ -74,7 +74,7 @@ defmodule Paxos do
             pid ->send(pid,  {:prepare,self(),new_ballot})
           end
         end
-        state = %{ state | b: new_ballot }
+        state = %{ state | b: new_ballot}
         state
 
       {:prepared, b, c} ->
@@ -135,15 +135,17 @@ defmodule Paxos do
             state = %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
+	 # state = %{ state | b_old: b}
         end
         state
 
       {:decided, sender, v} ->
 #	if state.leader == :none do
 	#IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
-        state = %{ state | leader: sender, accepted_counter: 0}
-        send(state.upper, {:decide, v})
-#	end
+	if v == state.v_old do
+          state = %{ state | leader: sender, accepted_counter: 0}
+          send(state.upper, {:decide, v})
+ 	end
         state
 
       _ -> state

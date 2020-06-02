@@ -10,7 +10,7 @@ IEx.Helpers.c "paxos.ex"
 # ##########
 
 # Replace the following with the short host name of your machine
-host = "heron009"
+host = "heron154"
 # ###########
 
 get_node = fn -> String.to_atom(UUID.uuid1 <> "@" <> host) end
@@ -35,7 +35,7 @@ test_suite = [
   #  {&PaxosTest.run_minority_non_leader_crash/3, get_dist_config.(5), 10, "Minority non-leader crashes, no concurrent ballots"},
    # {&PaxosTest.run_leader_crash_simple/3, get_dist_config.(5), 10, "Leader crashes, no concurrent ballots"},
  #   {&PaxosTest.run_leader_crash_simple_2/3, get_dist_config.(7), 10, "Leader and some non-leaders crash, no concurrent ballots"},
-    {&PaxosTest.run_leader_crash_complex/3, get_dist_config.(11), 50, "Cascading failures of leaders and non-leaders"},
+#    {&PaxosTest.run_leader_crash_complex/3, get_dist_config.(11), 50, "Cascading failures of leaders and non-leaders"},
     {&PaxosTest.run_leader_crash_complex_2/3, get_dist_config.(11), 50, "Cascading failures of leaders and non-leaders, random delays"}
 ]
 
