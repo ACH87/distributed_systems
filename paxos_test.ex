@@ -21,7 +21,7 @@ defmodule PaxosTest do
         receive do
             {:decide, val} -> {:decide, {val, attempts}}
             after timeout -> 
-                Paxos.start_ballot(pid)
+                if pid != :none, do: Paxos.start_ballot(pid)
                 retry(pid, timeout, attempts - 1)
         end
     end
@@ -37,13 +37,15 @@ defmodule PaxosTest do
                 IO.puts("#{inspect name}: started")
                 Paxos.propose(pid, val)
                 if name == (fn [h | _] -> h end).(participants), do: Paxos.start_ballot(pid)
-                {status, {val, _}} = retry(pid, 1000, 10)
-                if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                lid = if name == hd(Enum.reverse(participants)), do: pid, else: :none
+                {status, {val, a}} = retry(lid, 1000, 10)
+                if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -58,13 +60,15 @@ defmodule PaxosTest do
                 IO.puts("#{inspect name}: started")
                 Paxos.propose(pid, val)
                 if name in (fn [h1, h2 | _] -> [h1, h2] end).(participants), do: Paxos.start_ballot(pid)
-                {status, {val, _}} = retry(pid, 1000, 10)
-                if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                lid = if name == hd(Enum.reverse(participants)), do: pid, else: :none
+                {status, {val, a}} = retry(lid, 1000, 10)
+                if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -82,13 +86,14 @@ defmodule PaxosTest do
                     Process.sleep(Enum.random(1..10))
                     Paxos.start_ballot(pid)
                 end
-                {status, {val, _}} = retry(pid, 1000, 10)
-                if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                {status, {val, a}} = retry(pid, 1000, 10)
+                if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -111,15 +116,20 @@ defmodule PaxosTest do
                     # IO.puts("KILLED #{kill_p}")
                 end
 
-                if name in List.delete(participants, kill_p)  do
-                    {status, {val, _}} = retry(pid, 1000, 10)
-                    if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                spare = List.delete(participants, kill_p)
+
+                if name in  spare do
+                    lid = if name == hd(Enum.reverse(spare)), do: pid, else: :none
+                    {status, {val, a}} = retry(lid, 1000, 10)
+                    if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
                 end
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                if name in spare, do:
+                    IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -145,15 +155,20 @@ defmodule PaxosTest do
                     Process.exit(pid, :kill)
                 end
 
-                if not (name in to_kill)  do
-                    {status, {val, _}} = retry(pid, 1000, 10)
-                    if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                spare = for p <- participants, not p in to_kill, do: p
+
+                if name in spare do
+                    lid = if name == hd(Enum.reverse(spare)), do: pid, else: :none
+                    {status, {val, a}} = retry(lid, 1000, 10)
+                    if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
                 end
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                if name in spare, do:
+                    IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -178,15 +193,20 @@ defmodule PaxosTest do
                     Paxos.start_ballot(pid)
                 end
 
-                if name != leader do
-                    {status, {val, _}} = retry(pid, 1000, 10)
-                    if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                spare = List.delete(participants, leader)
+
+                if name in spare do
+                    lid = if name == hd(Enum.reverse(spare)), do: pid, else: :none
+                    {status, {val, a}} = retry(lid, 1000, 10)
+                    if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
                 end
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                if name in spare, do:
+                    IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -223,14 +243,17 @@ defmodule PaxosTest do
                 end
 
                 if name in spare do
-                    {status, {val, _}} = retry(pid, 1000, 10)
-                    if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                    lid = if name == hd(Enum.reverse spare), do: pid, else: :none
+                    {status, {val, a}} = retry(lid, 1000, 10)
+                    if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
                 end
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                if name in spare, do:
+                    IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -274,14 +297,19 @@ defmodule PaxosTest do
                 end
 
                 if name in spare do
-                    {status, {val, _}} = retry(pid, 1000, 10)
-                    if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                    # lid = if name == hd(Enum.reverse spare), do: pid, else: :none
+                    lid = if name == (leader = hd(spare)), do: pid, else: :none
+                    # IO.puts "#{name}: elected #{leader} to finish up"
+                    {status, {val, a}} = retry(lid, 1000, 10)
+                    if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
                 end
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                if name in spare, do:
+                    IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
@@ -336,14 +364,18 @@ defmodule PaxosTest do
                         if name == hd(Enum.reverse spare), do: Paxos.start_ballot(pid)
                     end
 
-                    {status, {val, _}} = retry(pid, 1000, 10)
-                    if status != :none, do: IO.puts("#{name}: decided #{inspect val}"), 
+                    lid = if name == hd(spare), do: pid, else: :none
+                    # lid = if name == hd(Enum.reverse spare), do: pid, else: :none
+                    {status, {val, a}} = retry(lid, 1000, 10)
+                    if status != :none, do: IO.puts("#{name}: decided #{inspect val} after #{10 - a + 1} attempts"), 
                         else: IO.puts("#{name}: No decision after 10 seconds")
                 end
         end
         send(cpid, :done)
         receive do
             :all_done -> 
+                if name in spare, do:
+                    IO.puts("#{name}: #{inspect Process.info(pid, :message_queue_len)}")
                 kill_paxos(pid, name)
                 send cpid, :finished
         end
