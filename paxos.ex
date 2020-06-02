@@ -80,6 +80,7 @@ defmodule Paxos do
       {:prepared, b, c} ->
         if c != :none && c.b_old > state.b do
           # state = %{ state | v: c.v_old, b_old: c.b_old, counter: state.counter+1 }
+	  IO.puts('#{state.name} #{'updating v'} #{c.v_old}') 
           state = %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
         else
           state =  %{state | counter: state.counter+1}
@@ -98,7 +99,7 @@ defmodule Paxos do
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter + 1}
          if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
-	# IO.puts('#{state.name} #{'recived a quorum'}')
+	 IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
           state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
@@ -116,12 +117,13 @@ defmodule Paxos do
         # IO.puts('#{'old ballot'} #{state.b_old} #{b}')
         if state.b_old < b  do
           state = %{ state | b_old: b, v_old: v }
+	  IO.puts('#{'accepting'} #{state.b_old} #{state.v_old}')
           send(sender, {:accepted, b})
        end
         state
 
       {:prepare, sender, b} ->
-#	IO.puts('#{'leader attempting'} #{b}')
+	IO.puts('#{'leader attempting'} #{b}')
         if state.b_old < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
