@@ -145,12 +145,8 @@ defmodule Paxos do
       {:decided, sender, v} ->
 #	if state.leader == :none do
 	#IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
-      	state = if v == state.v_old do
-          send(state.upper, {:decide, v})
-          %{ state | leader: sender, accepted_counter: 0}
-        else
-          state
-       	end
+        send(state.upper, {:decide, v})
+        state = %{ state | leader: sender, accepted_counter: 0}
         state
 
       _ -> state
