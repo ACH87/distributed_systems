@@ -78,12 +78,12 @@ defmodule Paxos do
         state
 
       {:prepared, b, c} ->
-        if c != :none && c.b_old > state.b do
+        state = if c != :none && c.b_old > state.b do
           # state = %{ state | v: c.v_old, b_old: c.b_old, counter: state.counter+1 }
 	  IO.puts('#{state.name} #{'updating v'} #{c.v_old}')
-          state = %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
+          %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
         else
-          state =  %{state | counter: state.counter+1}
+          %{state | counter: state.counter+1}
         end
         if state.counter == trunc(length(state.neighbours)/2) + 1 do
 #	  IO.puts('#{state.name} #{'recieved quorum'}')
