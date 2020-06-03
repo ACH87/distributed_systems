@@ -74,7 +74,7 @@ defmodule Paxos do
             pid ->send(pid,  {:prepare,self(),new_ballot})
           end
         end
-        state = %{ state | b: new_ballot}
+        state = %{ state | b: new_ballot }
         state
 
       {:prepared, b, c} ->
@@ -98,18 +98,19 @@ defmodule Paxos do
         state
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter + 1}
-         state = if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
+         state <- if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
 	 IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
+          state = %{ state | leader: self() }
             for p <- state.neighbours do
               case :global.whereis_name(p) do
                 :undefined -> :undefined
                 pid -> send(pid, {:decided,self(), state.v})
               end
             end
-            %{ state | leader: self() }
            # else
              # send(state.upper, 'antoher leader elected')
-         end
+             state
+           end
           state
 
       {:accept,sender,b,v} ->
@@ -135,17 +136,15 @@ defmodule Paxos do
             state = %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
-	 # state = %{ state | b_old: b}
         end
         state
 
       {:decided, sender, v} ->
 #	if state.leader == :none do
 	#IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
-	if v == state.v_old do
-          state = %{ state | leader: sender, accepted_counter: 0}
-          send(state.upper, {:decide, v})
- 	end
+        state = %{ state | leader: sender, accepted_counter: 0}
+        send(state.upper, {:decide, v})
+#	end
         state
 
       _ -> state
