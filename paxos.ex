@@ -108,7 +108,7 @@ defmodule Paxos do
                 pid -> send(pid, {:decided,self(), state.v})
               end
             end
-            state = %{ state | leader: self() }
+            %{ state | leader: self() }
            else
              state
           end
@@ -117,24 +117,25 @@ defmodule Paxos do
       {:accept,sender,b,v} ->
 #        if state.leader != :none do
         # IO.puts('#{'old ballot'} #{state.b_old} #{b}')
-        if state.b_old < b  do
-          state = %{ state | b_old: b, v_old: v }
-	  IO.puts('#{'accepting'} #{state.b_old} #{state.v_old}')
-          send(sender, {:accepted, b})
-       end
+        state = if state.b_old < b  do
+	        send(sender, {:accepted, b})
+          %{ state | b_old: b, v_old: v }
+        else
+          state
+        end
         state
 
       {:prepare, sender, b} ->
-	IO.puts('#{'leader attempting'} #{b}')
-        if state.b_old < b do
+	      IO.puts('#{'leader attempting'} #{b}')
+        state = if state.b_old < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
             # state = %{ state | b_old: b}
-            state = %{state | current_vote: b}
+            %{state | current_vote: b}
           else
             send(sender, {:prepared, b, %{b_old: state.b_old, v_old: state.v_old}})
               # state = %{ state | b_old: b }
-            state = %{state | current_vote: b}
+            %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
 	 # state = %{ state | b_old: b}
@@ -144,10 +145,12 @@ defmodule Paxos do
       {:decided, sender, v} ->
 #	if state.leader == :none do
 	#IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
-	if v == state.v_old do
-          state = %{ state | leader: sender, accepted_counter: 0}
+      	state = if v == state.v_old do
           send(state.upper, {:decide, v})
- 	end
+          %{ state | leader: sender, accepted_counter: 0}
+        else
+          state
+       	end
         state
 
       _ -> state
