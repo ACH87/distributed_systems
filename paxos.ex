@@ -65,7 +65,7 @@ defmodule Paxos do
         state
 
       {:lead_prepare} ->
-        new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1) * length(state.neighbours)	
+        new_ballot = rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1) * length(state.neighbours)
          # enter prepare phase
 	#IO.puts('#{'new ballot'} #{state.name} #{new_ballot}')
         for p <- state.neighbours do
@@ -80,7 +80,7 @@ defmodule Paxos do
       {:prepared, b, c} ->
         if c != :none && c.b_old > state.b do
           # state = %{ state | v: c.v_old, b_old: c.b_old, counter: state.counter+1 }
-	  IO.puts('#{state.name} #{'updating v'} #{c.v_old}') 
+	  IO.puts('#{state.name} #{'updating v'} #{c.v_old}')
           state = %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
         else
           state =  %{state | counter: state.counter+1}
@@ -98,7 +98,7 @@ defmodule Paxos do
         state
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter + 1}
-         if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
+         state <- if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
 	 IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
           state = %{ state | leader: self() }
             for p <- state.neighbours do
@@ -109,7 +109,8 @@ defmodule Paxos do
             end
            # else
              # send(state.upper, 'antoher leader elected')
-         end
+             state
+           end
           state
 
       {:accept,sender,b,v} ->
