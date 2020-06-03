@@ -85,7 +85,7 @@ defmodule Paxos do
         else
           %{state | counter: state.counter+1}
         end
-        state = if state.counter == trunc(length(state.neighbours)/2) + 1 do
+        if state.counter == trunc(length(state.neighbours)/2) + 1 do
 #	  IO.puts('#{state.name} #{'recieved quorum'}')
           for p <- state.neighbours do
             case :global.whereis_name(p) do
@@ -93,9 +93,7 @@ defmodule Paxos do
               pid -> send(pid,  {:accept,self(), state.b,state.v})
             end
           %{state | counter: 0}
-          end
-          else
-            %{state}          
+          end          
         end
         state
       {:accepted, b} ->

@@ -10,7 +10,7 @@ IEx.Helpers.c "paxos.ex"
 # ##########
 
 # Replace the following with the short host name of your machine
-host = "heron009"
+host = "heron154"
 # ###########
 
 get_node = fn -> String.to_atom(UUID.uuid1 <> "@" <> host) end
