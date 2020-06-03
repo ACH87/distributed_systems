@@ -138,6 +138,8 @@ defmodule Paxos do
             %{state | current_vote: b}
             #state = %{state | current_vote: b}]
           end
+        else
+          state
 	 # state = %{ state | b_old: b}
         end
         state
