@@ -79,13 +79,13 @@ defmodule Paxos do
 
       {:prepared, b, c} ->
         state = if c != :none && c.b_old > state.b do
-	         IO.puts('#{state.name} #{'updating v'} #{c.v_old}')
+	         #IO.puts('#{state.name} #{'updating v'} #{c.v_old}')
           %{ state | counter: state.counter+1, b: c.b_old, v: c.v_old }
         else
           %{state | counter: state.counter+1}
         end
         state = if state.counter == trunc(length(state.neighbours)/2) + 1 do
-          IO.puts('#{state.name} #{'recieved quorum'}')
+          # IO.puts('#{state.name} #{'recieved quorum'}')
           for p <- state.neighbours do
             case :global.whereis_name(p) do
               :undefined -> :undefined
@@ -100,15 +100,15 @@ defmodule Paxos do
 
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter + 1}
-          state = if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
-	          # IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
+          state = if state.accepted_counter == trunc(length(state.neighbours)/2) +1 do
+	           IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
             for p <- state.neighbours do
               case :global.whereis_name(p) do
                 :undefined -> :undefined
                 pid -> send(pid, {:decided,self(), state.v})
               end
             end
-            %{ state | leader: self() }
+            %{ state | leader: self(), accepted_counter: 0 }
            else
              state
           end
@@ -126,7 +126,7 @@ defmodule Paxos do
         state
 
       {:prepare, sender, b} ->
-	      IO.puts('#{'leader attempting'} #{b}')
+	      #IO.puts('#{'leader attempting'} #{b}')
         state = if state.b_old < b do
          if state.b_old == 0 do
             send(sender, {:prepared, b, :none})
@@ -146,9 +146,11 @@ defmodule Paxos do
 
       {:decided, sender, v} ->
 #	if state.leader == :none do
-	IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
-        send(state.upper, {:decide, v})
-        state = %{ state | leader: sender, accepted_counter: 0}
+	# IO.puts('#{'decided'} #{state.v} #{state.v_old} #{state.b_old} ')
+	if state.v_old == v do
+	 send(state.upper, {:decide, v})
+	end
+        #state = %{ state | leader: sender, accepted_counter: 0}
         state
 
       _ -> state
