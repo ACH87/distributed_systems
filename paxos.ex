@@ -96,21 +96,22 @@ defmodule Paxos do
           else
             state
         end
+        state
 
       {:accepted, b} ->
           state = %{ state | accepted_counter: state.accepted_counter + 1}
-         if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
-	 IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
-          state = %{ state | leader: self() }
+          state = if state.accepted_counter == trunc(length(state.neighbours)/2) +1 && b == state.b do
+	          IO.puts('#{state.name} #{'recived a quorum'} #{state.v}')
             for p <- state.neighbours do
               case :global.whereis_name(p) do
                 :undefined -> :undefined
                 pid -> send(pid, {:decided,self(), state.v})
               end
             end
-           # else
-             # send(state.upper, 'antoher leader elected')
-         end
+            state = %{ state | leader: self() }
+           else
+             state
+          end
           state
 
       {:accept,sender,b,v} ->
