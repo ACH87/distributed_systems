@@ -37,7 +37,7 @@ defmodule Paxos do
     received_count > 0 and max_count > 0 and trunc(received_count) >= trunc(max_count/2)
   end
 
-  defp node_rank(state) do
+  defp rank(state) do
     Enum.find_index(state.neighbours, fn n -> state.name == n end)
   end
 
@@ -47,7 +47,7 @@ defmodule Paxos do
     state = receive do
 
       {:start_ballot} ->
-        new_ballot = trunc(node_rank(state) + (state.b_old / Enum.count(state.neighbours) + 1))
+        new_ballot = trunc(rank(state) + (state.b_old / Enum.count(state.neighbours) + 1)) * Enum.count(state.neighbours)
         for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
