@@ -8,7 +8,7 @@ defmodule Paxos do
     else
       # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
       # spawns the process running the layer algorithmic logic specifying the floodingbc
-      pid = spawn(Paxos, :init, [name, 0, participants, upper_layer])
+      pid = spawn(Paxos, :init, [name, participants, upper_layer])
       :global.unregister_name(name)
       case :global.register_name(name, pid) do
         :yes -> pid
@@ -76,7 +76,7 @@ defmodule Paxos do
 
     state = receive do
 
-      {:proposed, v} ->
+      {:proposed, value} ->
         %{state | v: value}
 
       {:start_ballot} ->
