@@ -80,7 +80,8 @@ defmodule Seat do
           id -> Process.exit(id, :kill)
         end
 
+      end
+    run(state)
   end
 
-  run(state)
 end
