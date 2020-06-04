@@ -8,7 +8,7 @@ defmodule Paxos do
       pid
   end
 
-  def init(name, participants, upper_layer) do
+  def init(name, neighbours, upper_layer) do
       state = %{
           name: name,
           upper_layer: upper_layer,
@@ -18,7 +18,7 @@ defmodule Paxos do
           v_old: 0,
           accepted: MapSet.new(),
           prepared: MapSet.new(),
-          participants: participants,
+          neighbours: neighbours,
           pending: :none
       }
       run(state)
@@ -32,13 +32,13 @@ defmodule Paxos do
     send(pid, {:propose, v})
   end
 
-  defp is_majority(received_count, participants) do
-    max_count = Enum.count(participants)
+  def quorum(received_count, neighbours) do
+    max_count = Enum.count(neighbours)
     received_count > 0 and max_count > 0 and trunc(received_count) >= trunc(max_count/2)
   end
 
   defp node_rank(state) do
-    Enum.find_index(state.participants, fn n -> state.name == n end)
+    Enum.find_index(state.neighbours, fn n -> state.name == n end)
   end
 
   defp run(state) do
@@ -47,8 +47,8 @@ defmodule Paxos do
     state = receive do
 
       {:start_ballot} ->
-        new_ballot = trunc(node_rank(state) + (state.b_old / Enum.count(state.participants) + 1))
-        for p <- state.participants do
+        new_ballot = trunc(node_rank(state) + (state.b_old / Enum.count(state.neighbours) + 1))
+        for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
             pid ->send(pid,  {:prepare,self(),new_ballot})
@@ -58,14 +58,14 @@ defmodule Paxos do
           prepared: state.b == new_ballot && state.prepared || MapSet.new(),
           pending: %{
             message: {:send_accept, new_ballot},
-            until: fn s -> is_majority(MapSet.size(s.prepared), s.participants) end
+            until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
           }
         }
 
       {:send_accept, b} ->
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
         v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
-        for p <- state.participants do
+        for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
 	#    IO.puts('sending accept')
@@ -77,13 +77,13 @@ defmodule Paxos do
           accepted: state.b == b && state.accepted || MapSet.new(),
           pending: %{
             message: {:send_decided, b},
-            until: fn s -> is_majority(MapSet.size(s.accepted), s.participants) end
+            until: fn s -> quorum(MapSet.size(s.accepted), s.neighbours) end
           }
         }
 
       {:send_decided, b} ->
 #	IO.puts('decided')
-        for p <- state.participants do
+        for p <- state.neighbours do
           case :global.whereis_name(p) do
             :undefined -> :undefined
             pid -> send(pid, {:decided,self(), state.v_old})
@@ -113,22 +113,6 @@ defmodule Paxos do
 #	IO.puts('value decided')
         send(state.upper_layer, {:decide, v})
         %{state | b: 0, accepted: MapSet.new(), prepared: MapSet.new()}
-
-#      {:bc_send, condition, message} ->
-#        if condition.(state) do
- #         send(my_pid, message)
- #         send(my_pid, {:relay, {:bc_send, condition, message}})
-  #      end
-   #     state
-
-    #  {:relay, message} ->
-     #   for name <- state.participants, name != state.name do
-      #    case :global.whereis_name(name) do
-       #     :undefined -> :undefined
-        #    pid -> send(pid, message)
-         # end
-        #end
-       # state
 
       after 50 ->
         if state.pending != :none and state.pending.until.(state) do
