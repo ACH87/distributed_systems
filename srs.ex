@@ -6,14 +6,10 @@ defmodule SRS do
 
   # Replace with your own implementation source files
   #IEx.Helpers.c "beb.ex"
-  IEx.Helpers.c "paxos.ex"
+  IEx.Helpers.c "paxos_cw.ex"
 
   def start(name, seats, upper_layer) do
 
-    if not Enum.member?(seats, name) do
-      {:error, 'participants must contain member'}
-
-    else
       # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
       # spawns the process running the layer algorithmic logic specifying the floodingbc
       pid = spawn(SRS, :init, [name, seats, upper_layer])
@@ -21,10 +17,8 @@ defmodule SRS do
       case :global.register_name(name, pid) do
         :yes -> pid
         :no  -> :error
-        IO.puts('registed')
       end
 
-    end
   end
 
   #ie reserve s1, with the value 10
@@ -40,7 +34,6 @@ defmodule SRS do
     for {n, participants} <- seats do
       create_seat(n, participants)
     end
-
     state = %{
       name: name,
       seats: seats,
@@ -60,10 +53,10 @@ defmodule SRS do
     receive do
       {:reserve, seat, value} ->
         # get the name of a seat
-        s = Map.fetch(state.seats, seat)
+        # s = Map.fetch(state.seats, seat)
         # finds pid
-        case :global.whereis_name(s) do
-          :undefined -> :undefined
+        case :global.whereis_name(seat) do
+          :undefined -> IO.puts('seat undefined')
           pid -> Seat.reserve(pid, value)
         end
         state
@@ -79,10 +72,9 @@ defmodule SRS do
       {:reserved, name, v} ->
         send(state.upper_layer, {:reserved, name, v})
 
-      {:started} ->
-        IO.puts('ballot started')
-
     end
+
+    run(state)
   end
 
 end

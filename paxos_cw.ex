@@ -76,6 +76,7 @@ defmodule Paxos do
         %{state | v: value}
 
       {:start_ballot} ->
+        IO.puts('starting ballot')
         new_ballot = trunc(rank(state.name, state.neighbours, 0) + (state.b_old / length(state.neighbours) + 1)) * length(state.neighbours)
         for p <- state.neighbours do
           case :global.whereis_name(p) do

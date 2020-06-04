@@ -2,21 +2,16 @@
 defmodule Seat do
   def start(name, participants, upper_layer) do
 
-    if not Enum.member?(participants, name) do
-      {:error, 'participants must contain member'}
 
-    else
       # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
       # spawns the process running the layer algorithmic logic specifying the floodingbc
       pid = spawn(Seat, :init, [name, participants, upper_layer])
       :global.unregister_name(name)
       case :global.register_name(name, pid) do
         :yes -> pid
-        :no  -> :error
-        IO.puts('registed')
+        :no  -> IO.puts('did not register')
       end
 
-    end
   end
 
   #reserver a pid (seat)  with the value
@@ -44,6 +39,7 @@ defmodule Seat do
       name: name,
       participants: participants,
       upper_layer: upper_layer,
+      counter: 0,
       avilability: :free
     }
     run(state)
@@ -61,8 +57,8 @@ defmodule Seat do
           leader = :random.uniform(length(state.participants)-1)
           id = Enum.at(state.participants, leader)
           case :global.whereis_name(id) do
-            :undefined -> :undefined
-            pid -> Paxos.propose(pid, v)
+            :undefined -> IO.puts('paxos undefined')
+            pid -> Paxos.propose(pid,{:val, v})
             Paxos.start_ballot(pid)
             # send(sender, {:started})
           end
@@ -72,8 +68,13 @@ defmodule Seat do
         state
 
       {:decide, v} ->
-        send(state.upper_layer, {:reserved, state.name, v})
-        %{state | avilability: :occupied}
+        state = %{state | counter: state.counter+1}
+        state = if state.counter == length(state.participants) do
+          send(state.upper_layer, {:reserved, state.name, v})
+          %{state | avilability: :occupied, counter: 0}
+        else
+          state
+        end
         state
 
       {:kill, pid} ->
