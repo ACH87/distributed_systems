@@ -18,7 +18,7 @@ defmodule Paxos do
           v_old: 0,
           accepted: MapSet.new(),
           prepared: MapSet.new(),
-          neighbours: participants,
+          participants: participants,
           pending: :none
       }
       run(state)
@@ -47,8 +47,8 @@ defmodule Paxos do
     state = receive do
 
       {:start_ballot} ->
-        new_ballot = trunc(node_rank(state) + (state.b_old / Enum.count(state.neighbours) + 1))
-        for p <- state.neighbours do
+        new_ballot = trunc(node_rank(state) + (state.b_old / Enum.count(state.participants) + 1))
+        for p <- state.participants do
           case :global.whereis_name(p) do
             :undefined -> :undefined
             pid ->send(pid,  {:prepare,self(),new_ballot})
@@ -58,7 +58,7 @@ defmodule Paxos do
           prepared: state.b == new_ballot && state.prepared || MapSet.new(),
           pending: %{
             message: {:send_accept, new_ballot},
-            until: fn s -> is_majority(MapSet.size(s.prepared), s.neighbours) end
+            until: fn s -> is_majority(MapSet.size(s.prepared), s.participants) end
           }
         }
 
@@ -66,7 +66,7 @@ defmodule Paxos do
         @log && IO.puts "#{state.name}: majority prepared, count #{Enum.count(state.prepared)}"
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
         v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
-        for p <- state.neighbours do
+        for p <- state.participants do
           case :global.whereis_name(p) do
             :undefined -> :undefined
             pid -> send(pid,  {:accept,self(), b,v})
@@ -83,7 +83,12 @@ defmodule Paxos do
 
       {:send_decided, b} ->
         @log && IO.puts "#{state.name}: majority accepted, count #{MapSet.size(state.accepted)}"
-        send(my_pid, {:bc_send, fn s -> s.b == b end, {:decided, state.v_old}})
+        for p <- state.participants do
+          case :global.whereis_name(p) do
+            :undefined -> :undefined
+            pid -> send(pid, {:decided,self(), state.v})
+          end
+        end
         %{state | accepted: MapSet.new()}
 
       {:prepared, sender, b, vote_old} ->
