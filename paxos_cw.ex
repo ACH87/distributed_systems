@@ -1,22 +1,9 @@
 defmodule Paxos do
 
   def start(name, participants, upper_layer) do
-
-    if not Enum.member?(participants, name) do
-      {:error, 'participants must contain member'}
-
-    else
-      # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
-      # spawns the process running the layer algorithmic logic specifying the floodingbc
-      pid = spawn(Paxos, :init, [name, 0, participants, upper_layer])
-      :global.unregister_name(name)
-      case :global.register_name(name, pid) do
-        :yes -> pid
-        :no  -> :error
-        IO.puts('registed')
-      end
-
-    end
+      pid = spawn(Paxos, :init, [name, participants, upper_layer])
+      :global.re_register_name(name, pid)
+      pid
   end
 
   def init(name, neighbours, upper_layer) do
@@ -88,32 +75,12 @@ defmodule Paxos do
           end
         end
         %{state |
-          prepared: state.b == new_ballot && state.prepared || MapSet.new()#,
-          # pending: %{
-          #   message: {:start_accept, new_ballot},
-          #   until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
-          # }
-        }
-        state = if quorum(MapSet.size(s.prepared), s.neighbours) do
-          {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
-          v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
-          for p <- state.neighbours do
-            case :global.whereis_name(p) do
-              :undefined -> :undefined
-  	#    IO.puts('sending accept')
-              pid -> send(pid,  {:accept,self(), b,v})
-            end
-          end
-          %{state |
-            prepared: MapSet.new(),
-            accepted: state.b == b && state.accepted || MapSet.new(),
-            pending: %{
-              message: {:start_decided, b},
-              until: fn s -> quorum(MapSet.size(s.accepted), s.neighbours) end
-            }
+          prepared: state.b == new_ballot && state.prepared || MapSet.new(),
+          pending: %{
+            message: {:start_accept, new_ballot},
+            until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
           }
-        end
-
+        }
 
       {:prepare, leader, b} ->
           send(leader, {:prepared, state.name, b, state.b_old > 0 && {state.b_old, state.v_old} || {:none}})
@@ -121,27 +88,6 @@ defmodule Paxos do
 
       {:prepared, sender, b, vote_old} ->
           state.b == b && %{state | prepared: MapSet.put(state.prepared, {vote_old, sender})} || state
-          state = if quorum(MapSet.size(s.prepared), s.neighbours) do
-            {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
-            v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
-            for p <- state.neighbours do
-              case :global.whereis_name(p) do
-                :undefined -> :undefined
-    	#    IO.puts('sending accept')
-                pid -> send(pid,  {:accept,self(), b,v})
-              end
-            end
-            %{state |
-              prepared: MapSet.new(),
-              accepted: state.b == b && state.accepted || MapSet.new()#,
-              # pending: %{
-              #   message: {:start_decided, b},
-              #   until: fn s -> quorum(MapSet.size(s.accepted), s.neighbours) end
-              # }
-            }
-          else
-            state
-          end
 
       {:start_accept, b} ->
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
@@ -156,10 +102,10 @@ defmodule Paxos do
         %{state |
           prepared: MapSet.new(),
           accepted: state.b == b && state.accepted || MapSet.new(),
-          # pending: %{
-          #   message: {:start_decided, b},
-          #   until: fn s -> quorum(MapSet.size(s.accepted), s.neighbours) end
-          # }
+          pending: %{
+            message: {:start_decided, b},
+            until: fn s -> quorum(MapSet.size(s.accepted), s.neighbours) end
+          }
         }
 
       {:accept, leader, b, v} ->
@@ -169,18 +115,6 @@ defmodule Paxos do
 
       {:accepted, sender, b} ->
         state.b == b && %{state | accepted: MapSet.put(state.accepted, sender)} || state
-
-        state = if quorum(MapSet.size(s.accepted), s.neighbours) do
-          for p <- state.neighbours do
-            case :global.whereis_name(p) do
-              :undefined -> :undefined
-              pid -> send(pid, {:decided,self(), state.v_old})
-            end
-          end
-          %{state | accepted: MapSet.new()}
-        else
-          state
-        end
 
 
       {:start_decided, b} ->
@@ -198,13 +132,13 @@ defmodule Paxos do
         send(state.upper_layer, {:decide, v})
         %{state | b: 0, accepted: MapSet.new(), prepared: MapSet.new()}
 
-      # after 100 ->
-      #   if state.pending != :none and state.pending.until.(state) do
-      #     send(my_pid, state.pending.message)
-      #     %{state | pending: :none}
-      #   else
-      #     state
-      #   end
+      after 100 ->
+        if state.pending != :none and state.pending.until.(state) do
+          send(my_pid, state.pending.message)
+          %{state | pending: :none}
+        else
+          state
+        end
     end
 
     run(state)
