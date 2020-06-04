@@ -79,6 +79,9 @@ defmodule SRS do
       {:reserved, name, v} ->
         send(state.upper_layer, {:reserved, name, v})
 
+      {:started} ->
+        IO.puts('ballot started')
+
     end
   end
 

@@ -61,8 +61,9 @@ defmodule Seat do
           leader = :random.uniform(length(state.participants)-1)
           id = Enum.at(state.participants, leader)
           case :global.whereis_name(id) do
-            Paxos.propose(id, v)
-            Paxos.start_ballot(id)
+            :undefined -> :undefined
+            pid -> Paxos.propose(pid, v)
+            Paxos.start_ballot(pid)
             send(sender, {:started})
           end
         else
