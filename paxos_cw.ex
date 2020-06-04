@@ -63,13 +63,12 @@ defmodule Paxos do
         }
 
       {:send_accept, b} ->
-        @log && IO.puts "#{state.name}: majority prepared, count #{Enum.count(state.prepared)}"
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
         v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
         for p <- state.participants do
           case :global.whereis_name(p) do
             :undefined -> :undefined
-	    IO.puts('sending accept')
+	#    IO.puts('sending accept')
             pid -> send(pid,  {:accept,self(), b,v})
           end
         end
@@ -83,8 +82,7 @@ defmodule Paxos do
         }
 
       {:send_decided, b} ->
-        @log && IO.puts "#{state.name}: majority accepted, count #{MapSet.size(state.accepted)}"
-	IO.puts('decided')
+#	IO.puts('decided')
         for p <- state.participants do
           case :global.whereis_name(p) do
             :undefined -> :undefined
@@ -94,30 +92,25 @@ defmodule Paxos do
         %{state | accepted: MapSet.new()}
 
       {:prepared, sender, b, vote_old} ->
-        @log && IO.puts "#{state.name}: prepared #{b} #{inspect vote_old}"
         state.b == b && %{state | prepared: MapSet.put(state.prepared, {vote_old, sender})} || state
 
       {:accepted, sender, b} ->
-        @log && IO.puts "#{state.name}: accepted #{b}"
         state.b == b && %{state | accepted: MapSet.put(state.accepted, sender)} || state
 
       {:propose, v} ->
-        @log && IO.puts "#{state.name}: propose #{v}"
         %{state | v: v}
 
       {:prepare, leader, b} ->
-        @log && IO.puts "#{state.name}: prepare #{b}"
         send(leader, {:prepared, state.name, b, state.b_old > 0 && {state.b_old, state.v_old} || {:none}})
         %{state | b: b}
 
       {:accept, leader, b, v} ->
-        @log && IO.puts "#{state.name}: accept b#{b}, v#{v}"
-	IO.puts('accepting')
+#	IO.puts('accepting')
         send(leader, {:accepted, state.name, b})
         %{state | b_old: b, v_old: v}
 
       {:decided, leader, v} ->
-	IO.puts('value decided')
+#	IO.puts('value decided')
         send(state.upper_layer, {:decide, v})
         %{state | b: 0, accepted: MapSet.new(), prepared: MapSet.new()}
 
