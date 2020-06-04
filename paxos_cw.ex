@@ -90,8 +90,8 @@ defmodule Paxos do
         %{state |
           prepared: state.b == new_ballot && state.prepared || MapSet.new(),
           pending: %{
-            message: {:start_accept, new_ballot}#,
-#            until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
+            message: {:start_accept, new_ballot},
+            until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
           }
         }
 
@@ -100,16 +100,8 @@ defmodule Paxos do
           %{state | b: b}
 
       {:prepared, sender, b, vote_old} ->
-          state = if  state.b == b do
-            %{state | prepared: MapSet.put(state.prepared, {vote_old, sender})}
-          else
-            state
-          end
-          if quorum(MapSet.size(state.prepared), state.neighbours) do
-            send(self(), {:start_accept, state.b})
-          end
-          state
-          
+          state.b == b && %{state | prepared: MapSet.put(state.prepared, {vote_old, sender})} || state
+
       {:start_accept, b} ->
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
         v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
@@ -164,5 +156,3 @@ defmodule Paxos do
 
     run(state)
   end
-
-end
