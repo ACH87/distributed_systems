@@ -1,9 +1,22 @@
 defmodule Paxos do
 
   def start(name, participants, upper_layer) do
-      pid = spawn(Paxos, :init, [name, participants, upper_layer])
-      :global.re_register_name(name, pid)
-      pid
+
+    if not Enum.member?(participants, name) do
+      {:error, 'participants must contain member'}
+
+    else
+      # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
+      # spawns the process running the layer algorithmic logic specifying the floodingbc
+      pid = spawn(Paxos, :init, [name, 0, participants, upper_layer])
+      :global.unregister_name(name)
+      case :global.register_name(name, pid) do
+        :yes -> pid
+        :no  -> :error
+        IO.puts('registed')
+      end
+
+    end
   end
 
   def init(name, neighbours, upper_layer) do
