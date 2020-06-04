@@ -1,57 +1,56 @@
-defmodule SRS do
+# seat
+defmodule Seat do
+  def start(name, participants, upper_layer) do
 
-  def start(name, neighbours) do
-    spawn(SRS, :init, [name, neighbours])
-  end
+    if not Enum.member?(participants, name) do
+      {:error, 'participants must contain member'}
 
-  # neighbours are a list of process names
-  def init(name, seats, num_of_seats) do
-
-    # create a list of seats,
-    seats = Map.new()
-    # each process is a pid
-
-    for seat <- 1..num_of_seats do
-      layer = []
-      for p <- seats do
-        pid = Paxos.start('{seat}{p}', seats, self(())
-        seats = layer + [pid]
+    else
+      # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
+      # spawns the process running the layer algorithmic logic specifying the floodingbc
+      pid = spawn(Seat, :init, [name, participants, upper_layer])
+      :global.unregister_name(name)
+      case :global.register_name(name, pid) do
+        :yes -> pid
+        :no  -> :error
+        IO.puts('registed')
       end
-      Map.put(seat, layer, false)
-    end )
-    state = %{
-      name: name,
-      seats: seats
-    }
-    run(state)
-  end
-
-  def reserve_seat(seat, value) do
-    send(self(), {:reserve_seat, seat, value})
-  end
-
-  defp run(state) do
-    my_pid = self()
-    my_name = state.name
-    
-    state = receive do
-      {:reserve_seat, seat, value} ->
-        seat_layer = state.seats.seat
-        Paxos.propose(seat, value)
-        Paxos.start_ballot(seat)
-        leader = :rand.uniform(length(seat_layer))
-        seat_pid = '{seat}{leader}'
-        state = MapSet.put(state, {seat_layer.seat_pid, seat})
-        state
-
-      {:decided, sender, value} ->
-        seat = state.sender
-        state = %{state | seat: true}
-        state
-
 
     end
+  end
+
+  #upper layer - the srs System
+  #name - seat number -
+  #participants - the paxos
+  def init( name, participants, upper_layer) do
+    state = %{
+      srs: seat_reservation,
+      name: name,
+      participants: participants,
+      avilability: false
+    }
+    #TODO start each process
     run(state)
   end
 
+  def run(state) do
+    receive do
+      {:query, pid} ->
+        send(pid, {:avilability, state.avilability})
+        state
+
+      {:reserve, pid, v, s} ->
+        # start ballots
+        seat = Map.fetch(state.participants, s)
+        seat.propose(v)
+        seat.start_ballot()
+        state
+
+      {:decide, v} ->
+        send(upper_layer, {:reserved, self(), v})
+        %{state | avilability: true}
+
+  end
+
+  run(state)
 end
