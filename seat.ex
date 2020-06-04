@@ -57,7 +57,7 @@ defmodule Seat do
 
       {:reserve,  v} ->
         # start ballots
-        if state.avilability do
+        if state.avilability == :free do
           leader = :random.uniform(length(state.participants)-1)
           id = Enum.at(state.participants, leader)
           case :global.whereis_name(id) do
