@@ -114,21 +114,21 @@ defmodule Paxos do
         send(state.upper_layer, {:decide, v})
         %{state | b: 0, accepted: MapSet.new(), prepared: MapSet.new()}
 
-      {:bc_send, condition, message} ->
-        if condition.(state) do
-          send(my_pid, message)
-          send(my_pid, {:relay, {:bc_send, condition, message}})
-        end
-        state
+#      {:bc_send, condition, message} ->
+#        if condition.(state) do
+ #         send(my_pid, message)
+ #         send(my_pid, {:relay, {:bc_send, condition, message}})
+  #      end
+   #     state
 
-      {:relay, message} ->
-        for name <- state.participants, name != state.name do
-          case :global.whereis_name(name) do
-            :undefined -> :undefined
-            pid -> send(pid, message)
-          end
-        end
-        state
+    #  {:relay, message} ->
+     #   for name <- state.participants, name != state.name do
+      #    case :global.whereis_name(name) do
+       #     :undefined -> :undefined
+        #    pid -> send(pid, message)
+         # end
+        #end
+       # state
 
       after 50 ->
         if state.pending != :none and state.pending.until.(state) do
