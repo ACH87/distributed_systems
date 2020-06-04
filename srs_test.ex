@@ -6,7 +6,7 @@ defmodule Testcases do
     IO.puts('init')
   end
 
-  def test_seat_reseve do
+  def test_seat_reseve() do
 
     srs = %{
       s0: [:p0, :p1, :p2],
@@ -30,7 +30,7 @@ defmodule Testcases do
     end
   end
 
-  def test_concurrent_seat do
+  def test_concurrent_seat() do
     srs = %{
       s0: [:p0, :p1, :p2],
       s1: [:p3, :p4, :p5],
@@ -41,7 +41,7 @@ defmodule Testcases do
     SRS.start('srs1', srs, self())
 
 
-    value = :random.uniform(10000000)
+    value = :rand.uniform(10000000)
 
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
@@ -49,7 +49,7 @@ defmodule Testcases do
     end
 
 
-    value = :random.uniform(10000000)
+    value = :rand.uniform(10000000)
 
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
