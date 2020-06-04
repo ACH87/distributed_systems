@@ -6,11 +6,11 @@ IEx.Helpers.c "uuid.ex"
 
 # Replace with your own implementation source files
 #IEx.Helpers.c "beb.ex"
-IEx.Helpers.c "paxos.ex"
+IEx.Helpers.c "paxos_cw.ex"
 # ##########
 
 # Replace the following with the short host name of your machine
-host = "heron154"
+host = "heron157"
 # ###########
 
 get_node = fn -> String.to_atom(UUID.uuid1 <> "@" <> host) end

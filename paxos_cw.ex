@@ -69,6 +69,7 @@ defmodule Paxos do
         for p <- state.participants do
           case :global.whereis_name(p) do
             :undefined -> :undefined
+	    IO.puts('sending accept')
             pid -> send(pid,  {:accept,self(), b,v})
           end
         end
@@ -83,10 +84,11 @@ defmodule Paxos do
 
       {:send_decided, b} ->
         @log && IO.puts "#{state.name}: majority accepted, count #{MapSet.size(state.accepted)}"
+	IO.puts('decided')
         for p <- state.participants do
           case :global.whereis_name(p) do
             :undefined -> :undefined
-            pid -> send(pid, {:decided,self(), state.v})
+            pid -> send(pid, {:decided,self(), state.v_old})
           end
         end
         %{state | accepted: MapSet.new()}
@@ -110,10 +112,12 @@ defmodule Paxos do
 
       {:accept, leader, b, v} ->
         @log && IO.puts "#{state.name}: accept b#{b}, v#{v}"
+	IO.puts('accepting')
         send(leader, {:accepted, state.name, b})
         %{state | b_old: b, v_old: v}
 
-      {:decided, v} ->
+      {:decided, leader, v} ->
+	IO.puts('value decided')
         send(state.upper_layer, {:decide, v})
         %{state | b: 0, accepted: MapSet.new(), prepared: MapSet.new()}
 
