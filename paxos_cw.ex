@@ -48,10 +48,6 @@ defmodule Paxos do
     received_count > 0 and max_count > 0 and trunc(received_count) >= trunc(max_count/2)
   end
 
-  defp rank(state) do
-    Enum.find_index(state.neighbours, fn n -> state.name == n end)
-  end
-
   def check_greater([], comp) do
     true
   end

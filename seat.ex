@@ -19,36 +19,60 @@ defmodule Seat do
     end
   end
 
+  def reserve(pid, value) do
+    send(self(), {pid, value})
+  end
+
+  def kill(pid) do
+    send(self(), {'kill', pid})
+  end
+
   #upper layer - the srs System
   #name - seat number -
-  #participants - the paxos
+  #participants - the paxos list ie [p1, p2, p3]
   def init( name, participants, upper_layer) do
+    pids = for p <-participants do
+      Paxos.start(p, participants, self())
+    end
     state = %{
       srs: seat_reservation,
       name: name,
       participants: participants,
-      avilability: false
+      avilability: :free
     }
-    #TODO start each process
     run(state)
   end
 
   def run(state) do
     receive do
       {:query, pid} ->
-        send(pid, {:avilability, state.avilability})
+        send(pid, {:status, state.avilability})
         state
 
-      {:reserve, pid, v, s} ->
+      {:reserve, sender, v} ->
         # start ballots
-        seat = Map.fetch(state.participants, s)
-        seat.propose(v)
-        seat.start_ballot()
+        if state.avilability do
+          leader = :random.uniform(length(state.participants)-1)
+          id = Enum.at(state.participants, leader)
+          case :global.whereis_name(id) do
+            Paxos.propose(id, v)
+            Paxos.start_ballot(id)
+            send(sender, {:started})
+          end
+        else
+          send(pid, {state.avilability})
+        end
         state
 
       {:decide, v} ->
-        send(upper_layer, {:reserved, self(), v})
-        %{state | avilability: true}
+        send(upper_layer, {:reserved, state.name, v})
+        %{state | avilability: :occupied}
+        state
+
+      {:kill, pid} ->
+        case :global.whereis_name(pid) do
+          id -> Process.exit(id, :kill)
+        end
 
   end
 
