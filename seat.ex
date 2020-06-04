@@ -19,12 +19,18 @@ defmodule Seat do
     end
   end
 
+  #reserver a pid (seat)  with the value
   def reserve(pid, value) do
-    send(self(), {pid, value})
+    send(pid, {:reserve, value})
   end
 
   def kill(pid) do
     send(self(), {'kill', pid})
+  end
+
+  #pid = seat, sender = sender process
+  def check_reservation(pid, sender) do
+    send(pid, {:query, sender})
   end
 
   #upper layer - the srs System
@@ -35,9 +41,9 @@ defmodule Seat do
       Paxos.start(p, participants, self())
     end
     state = %{
-      srs: seat_reservation,
       name: name,
       participants: participants,
+      upper_layer: upper_layer,
       avilability: :free
     }
     run(state)
@@ -49,7 +55,7 @@ defmodule Seat do
         send(pid, {:status, state.avilability})
         state
 
-      {:reserve, sender, v} ->
+      {:reserve,  v} ->
         # start ballots
         if state.avilability do
           leader = :random.uniform(length(state.participants)-1)
