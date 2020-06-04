@@ -64,15 +64,15 @@ defmodule Seat do
             :undefined -> :undefined
             pid -> Paxos.propose(pid, v)
             Paxos.start_ballot(pid)
-            send(sender, {:started})
+            # send(sender, {:started})
           end
         else
-          send(pid, {state.avilability})
+          send(state.upper_layer, {state.avilability})
         end
         state
 
       {:decide, v} ->
-        send(upper_layer, {:reserved, state.name, v})
+        send(state.upper_layer, {:reserved, state.name, v})
         %{state | avilability: :occupied}
         state
 

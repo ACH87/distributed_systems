@@ -10,13 +10,13 @@ defmodule SRS do
 
   def start(name, seats, upper_layer) do
 
-    if not Enum.member?(participants, name) do
+    if not Enum.member?(seats, name) do
       {:error, 'participants must contain member'}
 
     else
       # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
       # spawns the process running the layer algorithmic logic specifying the floodingbc
-      pid = spawn(SRS, :init, [name, seat, upper_layer])
+      pid = spawn(SRS, :init, [name, seats, upper_layer])
       :global.unregister_name(name)
       case :global.register_name(name, pid) do
         :yes -> pid

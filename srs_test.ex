@@ -1,7 +1,10 @@
-defmodule testcases do
+defmodule Testcases do
 
   IEx.Helpers.c "srs.ex"
 
+  def init() do
+    IO.puts('init')
+  end
 
   def test_seat_reseve do
 
@@ -37,14 +40,20 @@ defmodule testcases do
 
     SRS.start('srs1', srs, self())
 
+
+    value = :random.uniform(10000000)
+
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
       pid ->  SRS.reseve_seat(pid, 's1', value)
     end
 
+
+    value = :random.uniform(10000000)
+
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
-      pid ->  SRS.reseve_seat(pid, 's2', value)
+      pid ->  SRS.reseve_seat(pid, 's1', value)
     end
 
     receive do
@@ -52,10 +61,10 @@ defmodule testcases do
         IO.puts("#{'person reserved seat'}, #{seat}, #{v}")
     end
 
-    receive do
-      {:reserved, seat, v} ->
-        IO.puts("#{'person reserved'}, #{seat} #{v}")
-    end
+    # receive do
+    #   {:reserved, seat, v} ->
+    #     IO.puts("#{'person reserved'}, #{seat} #{v}")
+    # end
 
   end
 
