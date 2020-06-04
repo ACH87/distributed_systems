@@ -1,9 +1,22 @@
 defmodule Paxos do
 
   def start(name, participants, upper_layer) do
-      pid = spawn(Paxos, :init, [name, participants, upper_layer])
-      :global.re_register_name(name, pid)
-      pid
+
+    if not Enum.member?(participants, name) do
+      {:error, 'participants must contain member'}
+
+    else
+      # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
+      # spawns the process running the layer algorithmic logic specifying the floodingbc
+      pid = spawn(Paxos, :init, [name, 0, participants, upper_layer])
+      :global.unregister_name(name)
+      case :global.register_name(name, pid) do
+        :yes -> pid
+        :no  -> :error
+        IO.puts('registed')
+      end
+
+    end
   end
 
   def init(name, neighbours, upper_layer) do
@@ -77,8 +90,8 @@ defmodule Paxos do
         %{state |
           prepared: state.b == new_ballot && state.prepared || MapSet.new(),
           pending: %{
-            message: {:start_accept, new_ballot},
-            until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
+            message: {:start_accept, new_ballot}#,
+#            until: fn s -> quorum(MapSet.size(s.prepared), s.neighbours) end
           }
         }
 
@@ -87,8 +100,16 @@ defmodule Paxos do
           %{state | b: b}
 
       {:prepared, sender, b, vote_old} ->
-          state.b == b && %{state | prepared: MapSet.put(state.prepared, {vote_old, sender})} || state
-
+          state = if  state.b == b do
+            %{state | prepared: MapSet.put(state.prepared, {vote_old, sender})}
+          else
+            state
+          end
+          if quorum(MapSet.size(state.prepared), state.neighbours) do
+            send(self(), {:start_accept, state.b})
+          end
+          state
+          
       {:start_accept, b} ->
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
         v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
