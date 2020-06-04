@@ -1,5 +1,8 @@
 defmodule testcases do
 
+  IEx.Helpers.c "srs.ex"
+
+
   def test_seat_reseve do
 
     srs = %{
@@ -13,7 +16,10 @@ defmodule testcases do
 
     value = :random.uniform(10000000)
 
-    SRS.reseve_seat(self(), 's1', value)
+    case :global.whereis_name('srs1') do
+      :undefined -> :undefined
+      pid ->  SRS.reseve_seat(pid, 's1', value)
+    end
 
     receive do
       {:reserved, v} ->
@@ -31,8 +37,15 @@ defmodule testcases do
 
     SRS.start('srs1', srs, self())
 
-    SRS.reseve_seat(self(), 's1')
-    SRS.reseve_seat(self(), 's2')
+    case :global.whereis_name('srs1') do
+      :undefined -> :undefined
+      pid ->  SRS.reseve_seat(pid, 's1', value)
+    end
+
+    case :global.whereis_name('srs1') do
+      :undefined -> :undefined
+      pid ->  SRS.reseve_seat(pid, 's2', value)
+    end
 
     receive do
       {:reserved, seat, v} ->
@@ -46,6 +59,6 @@ defmodule testcases do
 
   end
 
-  
+
 
 end
