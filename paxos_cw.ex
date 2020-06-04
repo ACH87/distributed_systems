@@ -18,7 +18,7 @@ defmodule Paxos do
           v_old: 0,
           accepted: MapSet.new(),
           prepared: MapSet.new(),
-          participants: participants,
+          neighbours: participants,
           pending: :none
       }
       run(state)
@@ -47,14 +47,18 @@ defmodule Paxos do
     state = receive do
 
       {:start_ballot} ->
-        b = trunc(node_rank(state) + (state.b_old / Enum.count(state.participants) + 1))
-        @log && IO.puts("start ballot, leader: #{state.name}, ballot: #{b}")
-        send(my_pid, {:bc_send, fn s -> s.b < b and s.b_old < b end, {:prepare, my_pid, b}})
+        new_ballot = trunc(node_rank(state) + (state.b_old / Enum.count(state.neighbours) + 1))
+        for p <- state.neighbours do
+          case :global.whereis_name(p) do
+            :undefined -> :undefined
+            pid ->send(pid,  {:prepare,self(),new_ballot})
+          end
+        end
         %{state |
-          prepared: state.b == b && state.prepared || MapSet.new(),
+          prepared: state.b == new_ballot && state.prepared || MapSet.new(),
           pending: %{
-            message: {:send_accept, b},
-            until: fn s -> is_majority(MapSet.size(s.prepared), s.participants) end
+            message: {:send_accept, new_ballot},
+            until: fn s -> is_majority(MapSet.size(s.prepared), s.neighbours) end
           }
         }
 
@@ -62,7 +66,12 @@ defmodule Paxos do
         @log && IO.puts "#{state.name}: majority prepared, count #{Enum.count(state.prepared)}"
         {max_ballot, sender} = Enum.max(MapSet.to_list(state.prepared))
         v = max_ballot != {:none} && elem(max_ballot, 1) || state.v
-        send(my_pid, {:bc_send, fn s -> s.b_old < b end, {:accept, my_pid, b, v}})
+        for p <- state.neighbours do
+          case :global.whereis_name(p) do
+            :undefined -> :undefined
+            pid -> send(pid,  {:accept,self(), b,v})
+          end
+        end
         %{state |
           prepared: MapSet.new(),
           accepted: state.b == b && state.accepted || MapSet.new(),
