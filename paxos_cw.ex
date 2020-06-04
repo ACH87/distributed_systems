@@ -156,3 +156,4 @@ defmodule Paxos do
 
     run(state)
   end
+end
