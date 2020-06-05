@@ -1,9 +1,9 @@
-# seat
+# represents a seat which contains a paxos consensus layer
 defmodule Seat do
   def start(name, participants, upper_layer) do
 
 
-      # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
+      # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer (srs) pid
       # spawns the process running the layer algorithmic logic specifying the floodingbc
       pid = spawn(Seat, :init, [name, participants, upper_layer])
       :global.unregister_name(name)
@@ -19,6 +19,7 @@ defmodule Seat do
     send(pid, {:reserve, value})
   end
 
+  #kill a seat - needed for test cases
   def kill(pid) do
     send(self(), {'kill', pid})
   end
@@ -32,6 +33,7 @@ defmodule Seat do
   #name - seat number -
   #participants - the paxos list ie [p1, p2, p3]
   def init( name, participants, upper_layer) do
+    # create a paxos consensus layer
     pids = for p <-participants do
       Paxos.start(p, participants, self())
     end
@@ -47,6 +49,7 @@ defmodule Seat do
 
   def run(state) do
     receive do
+      # check availabilty based on layer who requeted it
       {:query, pid} ->
         send(pid, {:status, state.avilability})
         state
@@ -54,6 +57,7 @@ defmodule Seat do
       {:reserve,  v} ->
         # start ballots
         if state.avilability == :free do
+          # pick a random paxos instance to become the leader and start a ballot
           leader = :random.uniform(length(state.participants)-1)
           id = Enum.at(state.participants, leader)
           case :global.whereis_name(id) do
@@ -66,7 +70,7 @@ defmodule Seat do
           send(state.upper_layer, {state.avilability})
         end
         state
-
+        # when a value has been decidedreport to srs
       {:decide, v} ->
         state = %{state | counter: state.counter+1}
         state = if state.counter == length(state.participants) do
@@ -77,6 +81,7 @@ defmodule Seat do
         end
         state
 
+        # kill a paxos instance - use for testing
       {:kill, pid} ->
         case :global.whereis_name(pid) do
           id -> Process.exit(id, :kill)

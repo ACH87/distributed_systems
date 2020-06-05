@@ -8,6 +8,7 @@ defmodule SRS do
   #IEx.Helpers.c "beb.ex"
   IEx.Helpers.c "paxos_cw.ex"
 
+  #name of srs, upper layer the application, seats -  a map of seats against a list of paxos' instances
   def start(name, seats, upper_layer) do
 
       # initiate layer, takes in an atom, the namesassociated with eighbour process, and the upper layer pid
@@ -26,11 +27,14 @@ defmodule SRS do
     send(srs, {:reserve, seat, value})
   end
 
+  #check availability
   def check_available(srs, sender, seat) do
+    IO.puts('checking ')
     send(srs, {:check_available, sender, seat})
   end
 
   def init(name, seats, upper_layer) do
+    # create a seat
     for {n, participants} <- seats do
       create_seat(n, participants)
     end
@@ -61,16 +65,18 @@ defmodule SRS do
         end
         state
 
+        # check availabilty for a seat
        {:check_available, sender, seat} ->
-         s = Map.fetch(state.seats, seat)
-         case :global.whereis_name(s) do
+         case :global.whereis_name(seat) do
            :undefined -> :undefined
            pid -> Seat.check_reservation(pid, sender)
          end
          state
 
+        #once a seat is reserved 
       {:reserved, name, v} ->
         send(state.upper_layer, {:reserved, name, v})
+        state
 
     end
 
