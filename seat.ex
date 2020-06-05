@@ -14,9 +14,9 @@ defmodule Seat do
 
   end
 
-  #reserver a pid (seat)  with the value
-  def reserve(pid, value) do
-    send(pid, {:reserve, value})
+  #reserver a pid (seat)  with the value, p representing the leader ballot
+  def reserve(pid, value, p) do
+    send(pid, {:reserve, value, p})
   end
 
   #kill a seat - needed for test cases
@@ -54,12 +54,12 @@ defmodule Seat do
         send(pid, {:status, state.avilability})
         state
 
-      {:reserve,  v} ->
+        # v represents value, p is an int corresponding to a process
+      {:reserve,  v, p} ->
         # start ballots
         if state.avilability == :free do
           # pick a random paxos instance to become the leader and start a ballot
-          leader = :random.uniform(length(state.participants)-1)
-          id = Enum.at(state.participants, leader)
+          id = Enum.at(state.participants, p)
           case :global.whereis_name(id) do
             :undefined -> IO.puts('paxos undefined')
             pid -> Paxos.propose(pid,{:val, v})

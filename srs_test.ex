@@ -6,19 +6,21 @@ defmodule Testcases do
     IO.puts('init')
   end
 
+  # test seat reservation
   def test_seat_reseve() do
 
     srs = %{
-      s1: ['p0', 'p1', 'p2'],
+      s0: ['p0', 'p1', 'p2'],
       s1: ['p3', 'p4', 'p5'],
       s2: ['p6', 'p7', 'p8', 'p9', 'p10']
 
     }
     SRS.start('srs1', srs, self())
     value = :rand.uniform(10000000)
+    leader = :random.uniform(length(srs.s1)-1)
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
-      pid ->  SRS.reseve_seat(pid, :s1, value)
+      pid ->  SRS.reseve_seat(pid, :s1, value, leader)
     end
 
 
@@ -28,18 +30,20 @@ defmodule Testcases do
     end
   end
 
+  # test availabilty
   def test_reservation() do
     srs = %{
-      s1: ['p0', 'p1', 'p2'],
+      s0: ['p0', 'p1', 'p2'],
       s1: ['p3', 'p4', 'p5'],
       s2: ['p6', 'p7', 'p8', 'p9', 'p10']
 
     }
     SRS.start('srs1', srs, self())
     value = :rand.uniform(10000000)
+    leader = :random.uniform(length(srs.s1)-1)
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
-      pid ->  SRS.reseve_seat(pid, :s1, value)
+      pid ->  SRS.reseve_seat(pid, :s1, value, leader)
     end
 
 
@@ -60,6 +64,7 @@ defmodule Testcases do
     end
   end
 
+  # test concurrent seat
   def test_concurrent_seat() do
     srs = %{
       s0: [:p0, :p1, :p2],
@@ -73,17 +78,21 @@ defmodule Testcases do
 
     value = :rand.uniform(10000000)
 
+    leader = :random.uniform(length(srs.s1)-1)
+
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
-      pid ->  SRS.reseve_seat(pid, :s1, value)
+      pid ->  SRS.reseve_seat(pid, :s1, value, leader)
     end
 
 
     value = :rand.uniform(10000000)
 
+    leader = :random.uniform(length(srs.s1)-1)
+
     case :global.whereis_name('srs1') do
       :undefined -> :undefined
-      pid ->  SRS.reseve_seat(pid, :s1, value)
+      pid ->  SRS.reseve_seat(pid, :s1, value, leader)
     end
 
     receive do

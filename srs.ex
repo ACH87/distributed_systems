@@ -22,9 +22,9 @@ defmodule SRS do
 
   end
 
-  #ie reserve s1, with the value 10
-  def reseve_seat(srs, seat, value) do
-    send(srs, {:reserve, seat, value})
+  #ie reserve s1, with the value 10 and the value
+  def reseve_seat(srs, seat, value, p) do
+    send(srs, {:reserve, seat, value, p})
   end
 
   #check availability
@@ -55,13 +55,13 @@ defmodule SRS do
   def run(state) do
 
     receive do
-      {:reserve, seat, value} ->
+      {:reserve, seat, value, p} ->
         # get the name of a seat
         # s = Map.fetch(state.seats, seat)
         # finds pid
         case :global.whereis_name(seat) do
           :undefined -> IO.puts('seat undefined')
-          pid -> Seat.reserve(pid, value)
+          pid -> Seat.reserve(pid, value, p)
         end
         state
 
@@ -73,7 +73,7 @@ defmodule SRS do
          end
          state
 
-        #once a seat is reserved 
+        #once a seat is reserved
       {:reserved, name, v} ->
         send(state.upper_layer, {:reserved, name, v})
         state
